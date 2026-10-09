@@ -88,7 +88,7 @@ public class Party {
         this.invitations.remove(player);
     }
     public @NotNull Invitation invite(@NotNull UUID sender, @NotNull UUID target) throws IllegalAccessException {
-        if(this.registry.config().partyLeader.onlyLeaderCanInvite())
+        if(this.registry.config().partyLeader.onlyLeaderCanInvite)
             if(!this.leader.get().equals(sender))
                 throw new IllegalAccessException("Only the party leader is allowed to send party invites.");
 
@@ -120,7 +120,7 @@ public class Party {
             return;
         }
 
-        if (this.registry.config().partyLeader.disbandOnLeaderQuit()) {
+        if (this.registry.config().partyLeader.disbandOnLeaderQuit) {
             this.registry.disbandParty(this);
             return;
         }

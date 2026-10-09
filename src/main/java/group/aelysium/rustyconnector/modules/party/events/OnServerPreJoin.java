@@ -20,25 +20,31 @@ public class OnServerPreJoin {
     public void handle(ServerPreJoinEvent event) {
         try {
             Server targetServer = event.server;
-            PartyRegistry parties = (PartyRegistry) Objects.requireNonNull(RC.Kernel().fetchModule("PartyRegistry")).orElseThrow();
+            PartyRegistry parties = RC.Module("PartyRegistry");
 
-            Party party = parties.fetch(event.player.uuid()).orElse(null);
+            Party party = parties.fetch(UUID.fromString(event.player.id())).orElse(null);
             if(party == null) return;
 
             PartyConfig config = parties.config();
 
-            if(config.partyLeader_onlyLeaderCanSwitch && !party.leader().equals(event.player.uuid())) {
-                event.canceled(true, "Only the party leader can switch servers.");
+            if(!party.leader().equals(UUID.fromString(event.player.id()))) {
+                if(config.partyLeader.onlyLeaderCanSwitch) {
+                    event.canceled(true, "Only the party leader can switch servers.");
+                }
+                return;
+            }
+
+            if (!party.autoFollow()) {
+                party.server(event.server.id());
                 return;
             }
 
             long availableSlots = 100;
-            if(config.switchingServers_switchPower.equals(Player.Connection.Power.MINIMAL))
+            if(config.switchingServers.switchPower.equals(Player.Connection.Power.MINIMAL))
                 availableSlots = (targetServer.softPlayerCap() - targetServer.players());
-            if(config.switchingServers_switchPower.equals(Player.Connection.Power.MODERATE))
+            if(config.switchingServers.switchPower.equals(Player.Connection.Power.MODERATE))
                 availableSlots = (targetServer.hardPlayerCap() - targetServer.players());
-            // AGGRESSIVE doesn't matter because it would just set "willFail" to "false".
-
+            
             if(availableSlots < 1) {
                 event.canceled(true, "The target server doesn't have enough space for your party. Try again later.");
                 return;
@@ -47,7 +53,7 @@ public class OnServerPreJoin {
             Set<UUID> leftBehind = new HashSet<>();
             List<UUID> preparedForConnection = new ArrayList<>();
             if(availableSlots < party.size()) {
-                if(config.switchingServers_overflowHandler.equals(PartyRegistry.OverflowHandler.BLOCK_SWITCH)) {
+                if(config.switchingServers.overflowHandler.equals(PartyRegistry.OverflowHandler.BLOCK_SWITCH)) {
                     event.canceled(true, "The target server doesn't have enough space for your party. Try again later.");
                     return;
                 }
@@ -60,26 +66,28 @@ public class OnServerPreJoin {
                     if(item == null) break;
 
                     leftBehind.add(preparedForConnection.get(i));
-
                     i++;
                 }
                 preparedForConnection.removeAll(leftBehind);
 
-                if(config.switchingServers_overflowHandler.equals(PartyRegistry.OverflowHandler.KICK)) {
+                if(config.switchingServers.overflowHandler.equals(PartyRegistry.OverflowHandler.KICK)) {
                     leftBehind.forEach(u -> party.kick(u, "The party moved to a server that didn't have enough room for you."));
                 }
-                if(config.switchingServers_overflowHandler.equals(PartyRegistry.OverflowHandler.ABANDON)) {
+                if(config.switchingServers.overflowHandler.equals(PartyRegistry.OverflowHandler.ABANDON)) {
                     leftBehind.forEach(u -> {
                         try {
-                            RC.P.Player(u).orElseThrow().message(Component.text("The party moved to a server that didn't have enough room for you."));
+                            RC.P.PlayerFromID(u.toString()).orElseThrow().message(Component.text("The party moved to a server that didn't have enough room for you."));
                         } catch (Exception ignore) {}
                     });
                 }
+            } else {
+                preparedForConnection.addAll(party.players());
+                preparedForConnection.remove(party.leader());
             }
 
             preparedForConnection.forEach(u -> {
                 try {
-                    Player.Connection.Request request = RC.P.Adapter().connectServer(event.server, RC.P.Player(u).orElseThrow());
+                    Player.Connection.Request request = RC.P.Adapter().connectServer(event.server, RC.P.PlayerFromID(u.toString()).orElseThrow());
                     Player.Connection.Result result = request.result().get(7, TimeUnit.SECONDS);
                     if(result.connected()) return;
 

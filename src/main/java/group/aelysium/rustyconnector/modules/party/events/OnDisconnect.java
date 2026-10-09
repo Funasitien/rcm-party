@@ -13,8 +13,8 @@ public class OnDisconnect {
     @EventListener
     public void handle(NetworkLeaveEvent event) {
         try {
-            UUID player = event.player.uuid();
-            PartyRegistry parties = (PartyRegistry) Objects.requireNonNull(RC.Kernel().fetchModule("PartyRegistry")).orElseThrow();
+            UUID player = UUID.fromString(event.player.id());
+            PartyRegistry parties = RC.Module("PartyRegistry");
 
             Party party = parties.fetch(player).orElse(null);
             if(party == null) return;

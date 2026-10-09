@@ -46,6 +46,7 @@ javadoc {
 shadowJar {
     archiveBaseName.set(archives_base_name)
     archiveClassifier.set('')
+    relocate "org.incendo", "group.aelysium.rustyconnector.velocity.org.incendo"
     mergeServiceFiles()
 }
 
