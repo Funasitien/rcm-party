@@ -16,13 +16,14 @@ version = module_version
 
 repositories {
     mavenCentral()
-    maven { url = "https://maven.mrnavastar.me/snapshots/" }
-    maven { url = "https://maven.mrnavastar.me/releases/" }
+    maven { url = "https://java.funa.dev/snapshots/" }
+    maven { url = "https://java.funa.dev/releases/" }
 }
 
 dependencies {
-    compileOnly 'group.aelysium.rustyconnector:core:0.9.14'
-    compileOnly 'group.aelysium.rustyconnector:friend:0.9.0-2'
+    compileOnly 'org.incendo:cloud-core:2.0.0'
+    compileOnly 'group.aelysium.rustyconnector:core:' + rustyconnector_version
+    compileOnly 'group.aelysium.rustyconnector:rcm-friends:' + friends_version
 
     compileOnly 'net.kyori:adventure-api:4.17.0'
 }

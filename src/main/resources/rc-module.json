@@ -5,6 +5,10 @@
   "environments": [
     "proxy"
   ],
+  "dependencies": [
+    "haze",
+    "haze-mysql"
+  ],
   "softDependencies": [
     "friendregistry"
   ]

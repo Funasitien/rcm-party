@@ -20,6 +20,7 @@ public class Party {
     protected final Set<UUID> players = Collections.newSetFromMap(new ConcurrentHashMap<>());
     protected final AtomicReference<UUID> leader;
     protected final AtomicReference<String> server;
+    protected final AtomicBoolean autoFollow = new AtomicBoolean(true);
     protected final Map<UUID, Invitation> invitations = new ConcurrentHashMap<>();
 
     protected Party(
@@ -45,7 +46,7 @@ public class Party {
         this.leader.set(player);
     }
     public @NotNull Optional<Player> resolvedLeader() {
-        return RC.P.Player(this.leader.get());
+        return RC.P.PlayerFromID(String.valueOf(this.leader.get()));
     }
 
     public @NotNull Set<UUID> players() {
@@ -59,6 +60,9 @@ public class Party {
     public boolean contains(@NotNull UUID player) {
         return this.players.contains(player);
     }
+
+    public boolean autoFollow() { return this.autoFollow.get(); }
+    public void autoFollow(boolean value) { this.autoFollow.set(value); }
 
     public boolean full() {
         return this.players.size() >= this.registry.config().maxMember;
@@ -84,7 +88,7 @@ public class Party {
         this.invitations.remove(player);
     }
     public @NotNull Invitation invite(@NotNull UUID sender, @NotNull UUID target) throws IllegalAccessException {
-        if(this.registry.config().partyLeader_onlyLeaderCanInvite)
+        if(this.registry.config().partyLeader.onlyLeaderCanInvite())
             if(!this.leader.get().equals(sender))
                 throw new IllegalAccessException("Only the party leader is allowed to send party invites.");
 
@@ -116,7 +120,7 @@ public class Party {
             return;
         }
 
-        if (this.registry.config().partyLeader_disbandOnLeaderQuit) {
+        if (this.registry.config().partyLeader.disbandOnLeaderQuit()) {
             this.registry.disbandParty(this);
             return;
         }
@@ -132,7 +136,7 @@ public class Party {
     public void kick(@NotNull UUID uuid, @NotNull String reason) {
         this.leave(uuid);
 
-        Player player = RC.P.Player(uuid).orElse(null);
+        Player player = RC.P.PlayerFromID(String.valueOf(uuid)).orElse(null);
         if(player == null) return;
 
         player.message(Component.text(reason));
