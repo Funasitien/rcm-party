@@ -5,12 +5,14 @@ import group.aelysium.rustyconnector.common.errors.Error;
 import group.aelysium.rustyconnector.common.events.EventManager;
 import group.aelysium.rustyconnector.common.modules.ExternalModuleBuilder;
 import group.aelysium.rustyconnector.common.modules.Module;
+import group.aelysium.rustyconnector.common.modules.stats.RustyContext;
 import group.aelysium.rustyconnector.modules.party.events.OnServerPreJoin;
 import group.aelysium.rustyconnector.modules.party.commands.PartyCommand;
 import group.aelysium.rustyconnector.modules.party.events.OnDisconnect;
 import group.aelysium.rustyconnector.proxy.ProxyKernel;
 import group.aelysium.rustyconnector.proxy.family.Server;
 import group.aelysium.rustyconnector.proxy.player.Player;
+import group.aelysium.rustyconnector.shaded.dev.faststats.Metrics;
 import net.kyori.adventure.text.Component;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,11 +29,15 @@ public class PartyRegistry implements Module {
     protected final Map<UUID, Party> parties = new ConcurrentHashMap<>();
     protected final Map<UUID, Party> players = new ConcurrentHashMap<>();
     protected final Map<UUID, Party.Invitation> invitations = new ConcurrentHashMap<>();
+    private final RustyContext context = new RustyContext.Factory(this, "f06a23dec4786335ff25fd845f600c13")
+            .metrics(Metrics.Factory::create)
+            .create();
 
     public PartyRegistry(
             PartyConfig config
     ) {
         this.config = config;
+        this.context.ready();
         if (config.friendsOnly) {
             if (!RC.checkAvailability("FriendRegistry")) {
                 throw new IllegalStateException("If you enable 'friends-only' you must also install the 'rcm-friend' module.");
@@ -94,6 +100,7 @@ public class PartyRegistry implements Module {
         } catch (Exception e) {
             RC.Error(Error.from(e).whileAttempting("To clear out closed parties."));
         }
+        this.context.shutdown();
 
         this.cleaner.schedule(this::clean, 20, TimeUnit.SECONDS);
     }

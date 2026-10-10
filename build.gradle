@@ -16,6 +16,7 @@ version = module_version
 
 repositories {
     mavenCentral()
+    mavenLocal()
     maven { url = "https://java.funa.dev/snapshots/" }
     maven { url = "https://java.funa.dev/releases/" }
 }
